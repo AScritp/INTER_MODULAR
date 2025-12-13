@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Servidor web Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: notion_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - notion_network
+
+  # PHP-FPM
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: notion_php
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: notion_db
+      DB_USERNAME: notion_user
+      DB_PASSWORD: notion_pass
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - notion_network
+
+  # MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: notion_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: notion_db
+      MYSQL_USER: notion_user
+      MYSQL_PASSWORD: notion_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - notion_network
+
+  # Redis para cache
+  redis:
+    image: redis:alpine
+    container_name: notion_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - notion_network
+
+  # Node para compilar Vue.js
+  node:
+    image: node:18-alpine
+    container_name: notion_node
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    command: sh -c "if [ -f package.json ]; then npm install && npm run dev; else echo 'Esperando package.json...'; sleep infinity; fi"
+    ports:
+      - "5173:5173"
+    networks:
+      - notion_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  notion_network:
+    driver: bridge
