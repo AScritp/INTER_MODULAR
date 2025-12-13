@@ -21,6 +21,15 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
+    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('/workspaces', [WorkspaceController::class, 'getWorkspacesJson'])->name('workspaces.json');
+        Route::post('/workspaces', [WorkspaceController::class, 'storeJson'])->name('workspaces.store.json');
+        Route::delete('/workspaces/{workspace}', [WorkspaceController::class, 'destroyJson'])->name('workspaces.destroy.json');
+        Route::get('/workspaces/{workspace}/documents', [DocumentController::class, 'getDocumentsJson'])->name('documents.json');
+        Route::post('/workspaces/{workspace}/documents', [DocumentController::class, 'storeJson'])->name('documents.store.json');
+        Route::delete('/workspaces/{workspace}/documents/{document}', [DocumentController::class, 'destroyJson'])->name('documents.destroy.json');
+    });
+
     // Workspaces
     Route::resource('workspaces', WorkspaceController::class);
     Route::post('workspaces/{workspace}/users', [WorkspaceController::class, 'addUser'])
