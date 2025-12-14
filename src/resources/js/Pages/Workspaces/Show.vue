@@ -90,13 +90,29 @@
                 <div
                   v-for="event in workspace.events"
                   :key="event.id"
-                  class="bg-gray-50 p-4 rounded border border-gray-200"
+                  class="flex items-center justify-between bg-gray-50 p-4 rounded border border-gray-200 hover:bg-gray-100"
                 >
-                  <h3 class="font-semibold text-gray-800">{{ event.title }}</h3>
-                  <p class="text-sm text-gray-600">
-                    {{ new Date(event.start_date).toLocaleString() }} - {{ new Date(event.end_date).toLocaleString() }}
-                  </p>
-                  <p v-if="event.description" class="text-sm text-gray-700 mt-2">{{ event.description }}</p>
+                  <div>
+                    <h3 class="font-semibold text-gray-800">{{ event.title }}</h3>
+                    <p class="text-sm text-gray-600">
+                      {{ new Date(event.start_date).toLocaleString() }} - {{ new Date(event.end_date).toLocaleString() }}
+                    </p>
+                    <p v-if="event.description" class="text-sm text-gray-700 mt-2">{{ event.description }}</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <Link
+                      :href="`/events/${event.id}/edit`"
+                      class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm"
+                    >
+                      Editar
+                    </Link>
+                    <button
+                      @click="deleteEvent(event.id)"
+                      class="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded text-sm"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
               <div v-else class="text-center py-8 text-gray-500">
@@ -190,6 +206,19 @@ const addUser = () => {
 const removeUser = (userId) => {
   if (confirm("¿Estás seguro?")) {
     window.location.href = `/workspaces/${props.workspace.id}/users/${userId}`;
+  }
+};
+
+const deleteEvent = (eventId) => {
+  if (confirm("¿Estás seguro de eliminar este evento?")) {
+    const form = useForm({});
+    form.delete(`/events/${eventId}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        // Recargar la página para actualizar la lista
+        window.location.reload();
+      },
+    });
   }
 };
 </script>

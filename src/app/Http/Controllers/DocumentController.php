@@ -31,6 +31,67 @@ class DocumentController extends Controller
     }
 
     /**
+     * Get documents for a workspace in JSON format (for dashboard)
+     */
+    public function getDocumentsJson(Workspace $workspace)
+    {
+        try {
+            $this->authorize('view', $workspace);
+
+            $documents = $workspace->documents()
+                ->orderBy('order')
+                ->get();
+
+            return response()->json($documents);
+        } catch (\Exception $e) {
+            \Log::error('Error loading documents: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al cargar documentos'], 500);
+        }
+    }
+
+    /**
+     * Store a newly created document in JSON format (for dashboard)
+     */
+    public function storeJson(Request $request, Workspace $workspace)
+    {
+        try {
+            $this->authorize('create', [Document::class, $workspace]);
+
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'content' => 'nullable|string',
+            ]);
+
+            $validated['user_id'] = Auth::id();
+            $validated['order'] = $workspace->documents()->max('order') + 1;
+
+            $document = $workspace->documents()->create($validated);
+
+            return response()->json($document, 201);
+        } catch (\Exception $e) {
+            \Log::error('Error creating document: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al crear documento'], 500);
+        }
+    }
+
+    /**
+     * Delete a document in JSON format (for dashboard)
+     */
+    public function destroyJson(Workspace $workspace, Document $document)
+    {
+        try {
+            $this->authorize('delete', $document);
+            $document->delete();
+
+            return response()->json(['message' => 'Documento eliminado'], 200);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting document: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al eliminar documento'], 500);
+        }
+    }
+
+
+    /**
      * Show the form for creating a new document
      */
     public function create(Workspace $workspace)

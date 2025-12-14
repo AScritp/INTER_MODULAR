@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Event extends Model
 {
@@ -25,17 +24,17 @@ class Event extends Model
     ];
 
     /**
-     * Relación: Evento pertenece a un Workspace
+     * Get the workspace that owns the event.
      */
-    public function workspace(): BelongsTo
+    public function workspace()
     {
         return $this->belongsTo(Workspace::class);
     }
 
     /**
-     * Relación: Evento pertenece a un Usuario (creador)
+     * Get the user that created the event.
      */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }

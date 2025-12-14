@@ -230,10 +230,22 @@ onMounted(() => {
                                             ? 'bg-blue-50 border-blue-300 border-2' 
                                             : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'"
                                     >
-                                        <p class="font-medium text-sm">{{ workspace.name }}</p>
-                                        <p class="text-xs text-gray-500">
-                                            {{ new Date(workspace.created_at).toLocaleDateString() }}
-                                        </p>
+                                        <div class="flex justify-between items-start">
+                                            <div class="flex-1">
+                                                <p class="font-medium text-sm">{{ workspace.name }}</p>
+                                                <p class="text-xs text-gray-500">
+                                                    {{ new Date(workspace.created_at).toLocaleDateString() }}
+                                                </p>
+                                            </div>
+                                            <Link
+                                                :href="`/workspaces/${workspace.id}`"
+                                                @click.stop
+                                                class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition"
+                                                title="Ver detalles del workspace"
+                                            >
+                                                Ver →
+                                            </Link>
+                                        </div>
                                     </div>
                                     <button
                                         @click.stop="deleteWorkspace(workspace.id)"

@@ -4,88 +4,72 @@ namespace App\Policies;
 
 use App\Models\Document;
 use App\Models\User;
-use App\Models\Workspace;
 
 class DocumentPolicy
 {
     /**
-     * Determine if the user can view the document
+     * Determine if the user can view the document.
      */
     public function view(User $user, Document $document): bool
     {
         $workspace = $document->workspace;
 
-        // Owner of workspace can view
-        if ($user->id === $workspace->user_id) {
+        // El propietario del workspace puede ver
+        if ($workspace->user_id === $user->id) {
             return true;
         }
 
-        // Creator can view
-        if ($user->id === $document->user_id) {
-            return true;
-        }
-
-        // Shared users with any role can view
+        // Los usuarios compartidos pueden ver
         return $workspace->users()->where('user_id', $user->id)->exists();
     }
 
     /**
-     * Determine if the user can create a document
+     * Determine if the user can create documents.
      */
-    public function create(User $user, Workspace $workspace): bool
+    public function create(User $user): bool
     {
-        // Only owner and editors can create
-        if ($user->id === $workspace->user_id) {
-            return true;
-        }
-
-        $role = $workspace->users()
-            ->where('user_id', $user->id)
-            ->pluck('role')
-            ->first();
-
-        return $role === 'editor';
+        return true;
     }
 
     /**
-     * Determine if the user can update the document
+     * Determine if the user can update the document.
      */
     public function update(User $user, Document $document): bool
     {
         $workspace = $document->workspace;
 
-        // Owner can update
-        if ($user->id === $workspace->user_id) {
+        // El propietario del workspace puede actualizar
+        if ($workspace->user_id === $user->id) {
             return true;
         }
 
-        // Creator can update
-        if ($user->id === $document->user_id) {
-            return true;
-        }
-
-        // Only editors can update
-        $role = $workspace->users()
-            ->where('user_id', $user->id)
-            ->pluck('role')
-            ->first();
-
-        return $role === 'editor';
+        // Los usuarios con rol 'editor' pueden actualizar
+        $pivot = $workspace->users()->where('user_id', $user->id)->first();
+        return $pivot && $pivot->pivot->role === 'editor';
     }
 
     /**
-     * Determine if the user can delete the document
+     * Determine if the user can delete the document.
      */
     public function delete(User $user, Document $document): bool
     {
         $workspace = $document->workspace;
 
-        // Only workspace owner can delete
-        if ($user->id === $workspace->user_id) {
+        // El propietario del workspace puede eliminar
+        if ($workspace->user_id === $user->id) {
             return true;
         }
 
-        // Only creators can delete their own
-        return $user->id === $document->user_id;
+        // Los usuarios con rol 'editor' pueden eliminar
+        $pivot = $workspace->users()->where('user_id', $user->id)->first();
+        return $pivot && $pivot->pivot->role === 'editor';
+    }
+
+    /**
+     * Determine if the user can restore the document.
+     */
+    public function restore(User $user, Document $document): bool
+    {
+        return $this->delete($user, $document);
     }
 }
