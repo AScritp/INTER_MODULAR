@@ -146,6 +146,7 @@ const showingNavigationDropdown = ref(false);
                         >
                             Dashboard
                         </ResponsiveNavLink>
+
                     </div>
 
                     <!-- Responsive Settings Options -->

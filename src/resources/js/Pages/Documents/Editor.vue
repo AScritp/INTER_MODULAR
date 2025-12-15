@@ -1,5 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
+  <Head :title="document.title" />
+
+  <AuthenticatedLayout>
     <div class="py-6">
       <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
         <!-- Header -->
@@ -10,16 +12,22 @@
                 ← Volver al Workspace
               </Link>
               <input
-                v-model="form.title"
-                @change="autoSave"
+                v-model="title"
+                @input="triggerAutoSave"
                 type="text"
                 class="text-3xl font-bold text-gray-800 bg-transparent border-none w-full mt-2 focus:outline-none"
               />
             </div>
             <div class="text-right">
-              <div v-if="saveStatus" class="text-sm mb-2">
-                <span :class="saveStatus === 'saving' ? 'text-yellow-600' : 'text-green-600'">
-                  {{ saveStatus === 'saving' ? 'Guardando...' : 'Guardado' }}
+              <div class="text-sm mb-2 h-6">
+                <span v-if="saveStatus === 'saving'" class="text-yellow-600">
+                  Guardando...
+                </span>
+                <span v-else-if="saveStatus === 'saved'" class="text-green-600">
+                  ✓ Guardado
+                </span>
+                <span v-else-if="saveStatus === 'error'" class="text-red-600">
+                  Error al guardar
                 </span>
               </div>
               <button
@@ -35,17 +43,8 @@
         <!-- Editor -->
         <div class="bg-white rounded-lg shadow-sm p-6">
           <div id="editor" class="h-96 bg-white border border-gray-300 rounded"></div>
-          <div v-if="form.errors.content" class="text-red-600 text-sm mt-2">
-            {{ form.errors.content }}
-          </div>
 
           <div class="mt-6 flex gap-4">
-            <button
-              @click="saveDocument"
-              class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-6 rounded font-semibold"
-            >
-              Guardar Cambios
-            </button>
             <button
               @click="previewDocument"
               class="bg-gray-500 hover:bg-gray-700 text-white py-2 px-6 rounded"
@@ -56,12 +55,14 @@
         </div>
       </div>
     </div>
-  </div>
+  </AuthenticatedLayout>
 </template>
 
 <script setup>
-import { Link, useForm } from "@inertiajs/vue3";
-import { ref, onMounted } from "vue";
+import { Link, router, Head } from "@inertiajs/vue3";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import { ref, onMounted, onUnmounted } from "vue";
+import axios from "axios";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -70,14 +71,12 @@ const props = defineProps({
   workspace: Object,
 });
 
-const form = useForm({
-  title: props.document.title,
-  content: props.document.content || "",
-});
-
+const title = ref(props.document.title);
+const content = ref(props.document.content || "");
 const quill = ref(null);
 const saveStatus = ref(null);
-let saveTimeout;
+let saveTimeout = null;
+let statusTimeout = null;
 
 onMounted(() => {
   quill.value = new Quill("#editor", {
@@ -101,43 +100,50 @@ onMounted(() => {
   }
 
   quill.value.on("text-change", () => {
-    form.content = quill.value.root.innerHTML;
-    autoSave();
+    content.value = quill.value.root.innerHTML;
+    triggerAutoSave();
   });
 });
 
-const autoSave = () => {
-  clearTimeout(saveTimeout);
+onUnmounted(() => {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  if (statusTimeout) clearTimeout(statusTimeout);
+});
+
+const triggerAutoSave = () => {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  if (statusTimeout) clearTimeout(statusTimeout);
+  
   saveStatus.value = "saving";
 
   saveTimeout = setTimeout(() => {
-    axios
-      .patch(`/api/documents/${props.document.id}/auto-save`, {
-        title: form.title,
-        content: form.content,
-      })
-      .then(() => {
-        saveStatus.value = "saved";
-        setTimeout(() => {
-          saveStatus.value = null;
-        }, 2000);
-      })
-      .catch((error) => {
-        saveStatus.value = null;
-        console.error("Error saving:", error);
-      });
-  }, 2000);
+    performSave();
+  }, 1500);
 };
 
-const saveDocument = () => {
-  form.patch(`/documents/${props.document.id}`, {
-    preserveScroll: true,
-  });
+const performSave = async () => {
+  try {
+    await axios.patch(`/documents/${props.document.id}/auto-save`, {
+      title: title.value,
+      content: content.value,
+    });
+    
+    saveStatus.value = "saved";
+    statusTimeout = setTimeout(() => {
+      saveStatus.value = null;
+    }, 3000);
+  } catch (error) {
+    console.error("Error saving:", error);
+    saveStatus.value = "error";
+    statusTimeout = setTimeout(() => {
+      saveStatus.value = null;
+    }, 5000);
+  }
 };
 
 const deleteDocument = () => {
   if (confirm("¿Estás seguro de que deseas eliminar este documento?")) {
-    form.delete(`/documents/${props.document.id}`, {
+    router.delete(`/documents/${props.document.id}`, {
       onSuccess: () => {
         window.location.href = `/workspaces/${props.workspace.id}`;
       },
