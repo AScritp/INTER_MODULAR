@@ -48,7 +48,8 @@ class EventController extends Controller
      */
     public function create(Workspace $workspace)
     {
-        $this->authorize('create', [Event::class, $workspace]);
+        // Verificar que el usuario puede ver el workspace (acceso básico)
+        $this->authorize('view', $workspace);
 
         return Inertia::render('Events/Create', [
             'workspace' => $workspace,

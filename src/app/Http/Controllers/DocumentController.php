@@ -92,6 +92,22 @@ class DocumentController extends Controller
 
 
     /**
+     * Show a document
+     */
+    public function show(Document $document)
+    {
+        $this->authorize('view', $document);
+
+        $document->load('workspace');
+
+        return Inertia::render('Documents/Show', [
+            'document' => $document,
+            'workspace' => $document->workspace,
+            'canEdit' => Auth::user()->can('update', $document),
+        ]);
+    }
+
+    /**
      * Show the form for creating a new document
      */
     public function create(Workspace $workspace)

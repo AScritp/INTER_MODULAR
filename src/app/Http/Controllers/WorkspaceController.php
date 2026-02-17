@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Workspace;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,12 +16,12 @@ class WorkspaceController extends Controller
      */
     public function index()
     {
-        $workspaces = Workspace::where('user_id', auth()->id())
+        $workspaces = Workspace::where('user_id', Auth::id())
             ->with(['documents', 'events'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $sharedWorkspaces = auth()->user()
+        $sharedWorkspaces = Auth::user()
             ->sharedWorkspaces()
             ->with(['documents', 'events', 'user'])
             ->orderBy('created_at', 'desc')
@@ -37,13 +39,13 @@ class WorkspaceController extends Controller
     public function getWorkspacesJson()
     {
         try {
-            $workspaces = Workspace::where('user_id', auth()->id())
+            $workspaces = Workspace::where('user_id', Auth::id())
                 ->orderBy('created_at', 'desc')
                 ->get();
 
             return response()->json($workspaces);
         } catch (\Exception $e) {
-            \Log::error('Error loading workspaces: ' . $e->getMessage());
+            Log::error('Error loading workspaces: ' . $e->getMessage());
             return response()->json(['error' => 'Error al cargar workspaces'], 500);
         }
     }
@@ -60,7 +62,7 @@ class WorkspaceController extends Controller
             ]);
 
             $workspace = Workspace::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? '',
                 'is_shared' => false,
@@ -68,7 +70,7 @@ class WorkspaceController extends Controller
 
             return response()->json($workspace, 201);
         } catch (\Exception $e) {
-            \Log::error('Error creating workspace: ' . $e->getMessage());
+            Log::error('Error creating workspace: ' . $e->getMessage());
             return response()->json(['error' => 'Error al crear workspace'], 500);
         }
     }
@@ -93,7 +95,7 @@ class WorkspaceController extends Controller
         ]);
 
         $workspace = Workspace::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'name' => $validated['name'],
             'description' => $validated['description'] ?? '',
             'is_shared' => $validated['is_shared'] ?? false,
@@ -110,7 +112,38 @@ class WorkspaceController extends Controller
     {
         $this->authorize('view', $workspace);
 
-        $workspace->load(['documents', 'events', 'users', 'user']);
+        $userId = Auth::id();
+        $isOwner = $userId === $workspace->user_id;
+        $shared = $workspace->users()->where('user_id', $userId)->first();
+        $perm = $shared ? ($shared->pivot->permissions ?? null) : null;
+        if (is_string($perm)) {
+            $perm = json_decode($perm, true);
+        }
+        $docsQuery = $workspace->documents()->orderBy('order');
+        $eventsQuery = $workspace->events();
+        if (!$isOwner && is_array($perm)) {
+            $canReadExistingDocs = !empty($perm['read_existing_docs']);
+            $canReadOwnDocs = !empty($perm['read_own_docs']);
+            if (!$canReadExistingDocs) {
+                if ($canReadOwnDocs) {
+                    $docsQuery->where('user_id', $userId);
+                } else {
+                    $docsQuery->whereRaw('1=0');
+                }
+            }
+            $canReadExistingEvents = !empty($perm['read_existing_events']);
+            $canReadOwnEvents = !empty($perm['read_own_events']);
+            if (!$canReadExistingEvents) {
+                if ($canReadOwnEvents) {
+                    $eventsQuery->where('user_id', $userId);
+                } else {
+                    $eventsQuery->whereRaw('1=0');
+                }
+            }
+        }
+        $workspace->setRelation('documents', $docsQuery->get());
+        $workspace->setRelation('events', $eventsQuery->get());
+        $workspace->load(['users', 'user']);
 
         return Inertia::render('Workspaces/Show', [
             'workspace' => $workspace,

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>&#x26a1; Quick Start - Notion-Like Platform</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="-quick-start---notion-like-platform">⚡ Quick Start - Notion-Like Platform</h1>
+<h2 id="-inicio-en-5-minutos">🏃 Inicio en 5 Minutos</h2>
+<h3 id="opción-1-con-docker-recomendado---más-fácil">Opción 1: Con Docker (Recomendado - MÁS FÁCIL)</h3>
+<pre><code class="language-bash"><span class="hljs-comment"># 1. En la carpeta INTER_MODULAR</span>
+<span class="hljs-built_in">cd</span> INTER_MODULAR
+
+<span class="hljs-comment"># 2. Levantar contenedores</span>
+docker-compose up -d
+
+<span class="hljs-comment"># 3. Entrar al contenedor PHP</span>
+docker-compose <span class="hljs-built_in">exec</span> app bash
+
+<span class="hljs-comment"># 4. Dentro del contenedor:</span>
+composer install
+<span class="hljs-built_in">cp</span> .env.example .<span class="hljs-built_in">env</span>
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+npm install
+npm run build
+<span class="hljs-built_in">exit</span>
+
+<span class="hljs-comment"># 5. Acceder a http://localhost</span>
+</code></pre>
+<hr>
+<h3 id="opción-2-sin-docker-manual">Opción 2: Sin Docker (Manual)</h3>
+<pre><code class="language-bash"><span class="hljs-comment"># 1. Ir al directorio</span>
+<span class="hljs-built_in">cd</span> INTER_MODULAR/src
+
+<span class="hljs-comment"># 2. Instalar dependencias</span>
+composer install
+npm install
+
+<span class="hljs-comment"># 3. Configurar</span>
+<span class="hljs-built_in">cp</span> .env.example .<span class="hljs-built_in">env</span>
+php artisan key:generate
+
+<span class="hljs-comment"># 4. Base de datos (ejecutar en otra terminal)</span>
+mysql -u root -p
+CREATE DATABASE notion_like CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+<span class="hljs-built_in">exit</span>
+
+<span class="hljs-comment"># 5. Migraciones</span>
+php artisan migrate
+php artisan db:seed
+
+<span class="hljs-comment"># 6. Build</span>
+npm run build
+
+<span class="hljs-comment"># 7. Servidor (terminal 1)</span>
+php artisan serve
+
+<span class="hljs-comment"># 8. Hot reload opcional (terminal 2)</span>
+npm run dev
+
+<span class="hljs-comment"># 9. Acceder a http://localhost:8000</span>
+</code></pre>
+<hr>
+<h2 id="-credenciales-de-prueba">🔐 Credenciales de Prueba</h2>
+<pre><code>Email:    test@example.com
+Password: password
+</code></pre>
+<hr>
+<h2 id="-qué-hacer-primero">📍 Qué Hacer Primero</h2>
+<h3 id="1️⃣-login">1️⃣ Login</h3>
+<ul>
+<li>Inicia sesión con las credenciales arriba</li>
+<li>Verás el Dashboard con &quot;Mis Workspaces&quot;</li>
+</ul>
+<h3 id="2️⃣-crear-workspace">2️⃣ Crear Workspace</h3>
+<ul>
+<li>Haz clic en &quot;+ Nuevo Workspace&quot;</li>
+<li>Completa:
+<ul>
+<li>Nombre: &quot;Mi Primer Workspace&quot;</li>
+<li>Descripción: &quot;Espacio para apuntes&quot;</li>
+<li>Compartible: ☑️ (opcional)</li>
+</ul>
+</li>
+<li>Clic en &quot;Crear Workspace&quot;</li>
+</ul>
+<h3 id="3️⃣-ver-workspace">3️⃣ Ver Workspace</h3>
+<ul>
+<li>Haz clic en &quot;Ver&quot; en el workspace creado</li>
+<li>Verás 3 tabs: Documentos, Calendario, Compartir</li>
+</ul>
+<h3 id="4️⃣-crear-documento">4️⃣ Crear Documento</h3>
+<ul>
+<li>En la pestaña &quot;Documentos&quot;</li>
+<li>Haz clic en &quot;+ Nuevo Documento&quot;</li>
+<li>Completa:
+<ul>
+<li>Título: &quot;Mi Primer Documento&quot;</li>
+<li>Contenido: (opcional)</li>
+</ul>
+</li>
+<li>Clic en &quot;Crear Documento&quot;</li>
+<li>Se abrirá el editor automáticamente</li>
+</ul>
+<h3 id="5️⃣-editar-documento">5️⃣ Editar Documento</h3>
+<ul>
+<li><strong>Escribe contenido</strong> en el editor</li>
+<li>Observa &quot;Guardando...&quot; → &quot;Guardado&quot; (autoguardado)</li>
+<li>El contenido se guarda automáticamente cada 2-3 segundos</li>
+<li>Usa la barra de herramientas para:
+<ul>
+<li><strong>Bold</strong> / <em>Italic</em> / <u>Underline</u></li>
+<li>Listas ordenadas y desordenadas</li>
+<li>Títulos (H1, H2, H3)</li>
+<li>Citas (blockquote)</li>
+<li>Enlaces e imágenes</li>
+</ul>
+</li>
+</ul>
+<h3 id="6️⃣-compartir-workspace">6️⃣ Compartir Workspace</h3>
+<ul>
+<li>Vuelve al workspace (← Volver)</li>
+<li>Pestaña &quot;Compartir&quot;</li>
+<li>Completa:
+<ul>
+<li>Email del usuario: (debe estar registrado)</li>
+<li>Rol: &quot;Editor&quot; o &quot;Lector&quot;</li>
+</ul>
+</li>
+<li>Haz clic en &quot;Invitar&quot;</li>
+</ul>
+<h3 id="7️⃣-crear-evento">7️⃣ Crear Evento</h3>
+<ul>
+<li>En la pestaña &quot;Calendario&quot;</li>
+<li>Haz clic en &quot;+ Nuevo Evento&quot;</li>
+<li>Completa:
+<ul>
+<li>Título: &quot;Mi Evento&quot;</li>
+<li>Descripción: (opcional)</li>
+<li>Fecha/Hora inicio</li>
+<li>Fecha/Hora fin</li>
+</ul>
+</li>
+<li>Haz clic en &quot;Crear Evento&quot;</li>
+</ul>
+<hr>
+<h2 id="-ejemplo-completo-de-uso">🎮 Ejemplo Completo de Uso</h2>
+<pre><code>1. LOGIN (test@example.com / password)
+   ↓
+2. CREAR WORKSPACE &quot;Proyecto Final&quot;
+   ↓
+3. CREAR DOCUMENTO &quot;Requisitos&quot;
+   ├─ Escribe: &quot;- Requisito 1&quot;
+   ├─ Escribe: &quot;- Requisito 2&quot;
+   └─ Autoguardado automático
+   ↓
+4. CREAR DOCUMENTO &quot;Diseño&quot;
+   ├─ Escribe tu contenido
+   └─ Autoguardado automático
+   ↓
+5. COMPARTIR WORKSPACE
+   ├─ Email: collaborator@example.com
+   └─ Rol: Editor
+   ↓
+6. CREAR EVENTO &quot;Entrega Final&quot;
+   ├─ Fecha: 2025-12-20
+   ├─ Hora: 18:00 - 20:00
+   └─ Se ve en calendario
+</code></pre>
+<hr>
+<h2 id="-rutas-importantes">🔌 Rutas Importantes</h2>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/login</code></td>
+<td>Iniciar sesión</td>
+</tr>
+<tr>
+<td><code>/register</code></td>
+<td>Registrar usuario</td>
+</tr>
+<tr>
+<td><code>/dashboard</code></td>
+<td>Dashboard principal</td>
+</tr>
+<tr>
+<td><code>/workspaces</code></td>
+<td>Listar workspaces</td>
+</tr>
+<tr>
+<td><code>/workspaces/create</code></td>
+<td>Crear workspace</td>
+</tr>
+<tr>
+<td><code>/workspaces/{id}</code></td>
+<td>Ver workspace</td>
+</tr>
+<tr>
+<td><code>/documents/{id}/edit</code></td>
+<td>Editar documento</td>
+</tr>
+<tr>
+<td><code>/workspaces/{id}/events/create</code></td>
+<td>Crear evento</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="-si-algo-no-funciona">🐛 Si Algo No Funciona</h2>
+<h3 id="página-en-blanco">&quot;Página en blanco&quot;</h3>
+<pre><code class="language-bash">php artisan cache:clear
+php artisan view:clear
+npm run build
+</code></pre>
+<h3 id="error-de-conexión-a-bd">&quot;Error de conexión a BD&quot;</h3>
+<pre><code class="language-bash"><span class="hljs-comment"># Verificar MySQL está corriendo</span>
+mysql -u root -p -e <span class="hljs-string">&quot;SELECT 1;&quot;</span>
+
+<span class="hljs-comment"># Verificar .env tiene credenciales correctas</span>
+<span class="hljs-built_in">cat</span> .<span class="hljs-built_in">env</span> | grep DB_
+</code></pre>
+<h3 id="assets-no-cargan">&quot;Assets no cargan&quot;</h3>
+<pre><code class="language-bash">npm install
+npm run build
+</code></pre>
+<h3 id="clase-no-encontrada">&quot;Clase no encontrada&quot;</h3>
+<pre><code class="language-bash">composer dump-autoload
+</code></pre>
+<hr>
+<h2 id="-probar-más-funcionalidades">🧪 Probar Más Funcionalidades</h2>
+<h3 id="crear-segundo-usuario">Crear segundo usuario</h3>
+<pre><code class="language-bash"><span class="hljs-comment"># En Tinker</span>
+php artisan tinker
+&gt;&gt;&gt; \App\Models\User::factory()-&gt;create([<span class="hljs-string">&#x27;email&#x27;</span> =&gt; <span class="hljs-string">&#x27;user2@test.com&#x27;</span>])
+&gt;&gt;&gt; <span class="hljs-built_in">exit</span>
+</code></pre>
+<h3 id="luego">Luego:</h3>
+<ol>
+<li>Login con <a href="mailto:user2@test.com">user2@test.com</a></li>
+<li>El user de prueba puede invitar a user2 a su workspace</li>
+<li>user2 verá el workspace compartido en su lista</li>
+</ol>
+<hr>
+<h2 id="-documentación-completa">📚 Documentación Completa</h2>
+<p>Para más detalles, ver:</p>
+<ul>
+<li><code>README.md</code> - Descripción general</li>
+<li><code>SETUP_GUIDE.md</code> - Instalación detallada</li>
+<li><code>IMPLEMENTATION_SUMMARY.md</code> - Qué se implementó</li>
+<li><code>VERIFICATION_CHECKLIST.md</code> - Checklist de testing</li>
+<li><code>DEVELOPER_NOTES.md</code> - Notas técnicas</li>
+</ul>
+<hr>
+<h2 id="-características-ya-funcionando">✨ Características Ya Funcionando</h2>
+<p>✅ <strong>Autenticación</strong> - Login/Registro<br>
+✅ <strong>Workspaces</strong> - Crear, editar, eliminar, compartir<br>
+✅ <strong>Documentos</strong> - Editor con autoguardado cada 2-3 segundos<br>
+✅ <strong>Eventos</strong> - Calendario con eventos<br>
+✅ <strong>Permisos</strong> - Roles y autorización granular<br>
+✅ <strong>Drag &amp; Drop</strong> - Reordenar documentos<br>
+✅ <strong>Soft Delete</strong> - Eliminar y restaurar documentos<br>
+✅ <strong>Responsive</strong> - Mobile-friendly con Tailwind CSS</p>
+<hr>
+<h2 id="-próximo-paso">🎯 Próximo Paso</h2>
+<p>Después de probar, puedes:</p>
+<ol>
+<li><strong>Personalizar la marca</strong> (logo, colores)</li>
+<li><strong>Agregar más campos</strong> a documentos</li>
+<li><strong>Integrar búsqueda</strong> full-text</li>
+<li><strong>Agregar comentarios</strong> en documentos</li>
+<li><strong>Implementar WebSockets</strong> para colaboración en tiempo real</li>
+</ol>
+<hr>
+<p><strong>¡Listo! Ahora disfruta tu plataforma tipo Notion 🎉</strong></p>
+<p>Para soporte: revisa <code>DEVELOPER_NOTES.md</code></p>
+
+            
+            
+        </body>
+        </html>

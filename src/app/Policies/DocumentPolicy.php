@@ -4,6 +4,8 @@ namespace App\Policies;
 
 use App\Models\Document;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\ResourceShare;
 
 class DocumentPolicy
 {
@@ -14,21 +16,53 @@ class DocumentPolicy
     {
         $workspace = $document->workspace;
 
-        // El propietario del workspace puede ver
         if ($workspace->user_id === $user->id) {
             return true;
         }
 
-        // Los usuarios compartidos pueden ver
-        return $workspace->users()->where('user_id', $user->id)->exists();
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if ($shared) {
+            $perm = $shared->pivot->permissions ?? null;
+            if (is_array($perm)) {
+                if (!empty($perm['read_existing_docs'])) {
+                    return true;
+                }
+                if (!empty($perm['read_own_docs']) && $document->user_id === $user->id) {
+                    return true;
+                }
+            }
+            return true;
+        }
+
+        $resourceShare = ResourceShare::where('resource_type', 'document')
+            ->where('resource_id', $document->id)
+            ->where('user_id', $user->id)
+            ->first();
+        if ($resourceShare) {
+            $rp = $resourceShare->permissions ?? [];
+            return !empty($rp['read']);
+        }
+
+        return false;
     }
 
     /**
      * Determine if the user can create documents.
      */
-    public function create(User $user): bool
+    public function create(User $user, Workspace $workspace): bool
     {
-        return true;
+        if ($workspace->user_id === $user->id) {
+            return true;
+        }
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if (!$shared) {
+            return false;
+        }
+        $perm = $shared->pivot->permissions ?? null;
+        if (is_array($perm)) {
+            return !empty($perm['create_doc']);
+        }
+        return ($shared->pivot->role ?? null) === 'editor';
     }
 
     /**
@@ -37,15 +71,33 @@ class DocumentPolicy
     public function update(User $user, Document $document): bool
     {
         $workspace = $document->workspace;
-
-        // El propietario del workspace puede actualizar
         if ($workspace->user_id === $user->id) {
             return true;
         }
-
-        // Los usuarios con rol 'editor' pueden actualizar
-        $pivot = $workspace->users()->where('user_id', $user->id)->first();
-        return $pivot && $pivot->pivot->role === 'editor';
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if ($shared) {
+            $perm = $shared->pivot->permissions ?? null;
+            if (is_array($perm)) {
+                if (!empty($perm['update_any_doc'])) {
+                    return true;
+                }
+                if (!empty($perm['update_own_doc']) && $document->user_id === $user->id) {
+                    return true;
+                }
+            }
+            if (($shared->pivot->role ?? null) === 'editor') {
+                return true;
+            }
+        }
+        $resourceShare = ResourceShare::where('resource_type', 'document')
+            ->where('resource_id', $document->id)
+            ->where('user_id', $user->id)
+            ->first();
+        if ($resourceShare) {
+            $rp = $resourceShare->permissions ?? [];
+            return !empty($rp['update']);
+        }
+        return false;
     }
 
     /**
@@ -54,15 +106,33 @@ class DocumentPolicy
     public function delete(User $user, Document $document): bool
     {
         $workspace = $document->workspace;
-
-        // El propietario del workspace puede eliminar
         if ($workspace->user_id === $user->id) {
             return true;
         }
-
-        // Los usuarios con rol 'editor' pueden eliminar
-        $pivot = $workspace->users()->where('user_id', $user->id)->first();
-        return $pivot && $pivot->pivot->role === 'editor';
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if ($shared) {
+            $perm = $shared->pivot->permissions ?? null;
+            if (is_array($perm)) {
+                if (!empty($perm['delete_any_doc'])) {
+                    return true;
+                }
+                if (!empty($perm['delete_own_doc']) && $document->user_id === $user->id) {
+                    return true;
+                }
+            }
+            if (($shared->pivot->role ?? null) === 'editor') {
+                return true;
+            }
+        }
+        $resourceShare = ResourceShare::where('resource_type', 'document')
+            ->where('resource_id', $document->id)
+            ->where('user_id', $user->id)
+            ->first();
+        if ($resourceShare) {
+            $rp = $resourceShare->permissions ?? [];
+            return !empty($rp['delete']);
+        }
+        return false;
     }
 
     /**

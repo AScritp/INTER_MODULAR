@@ -12,13 +12,18 @@ class WorkspacePolicy
      */
     public function view(User $user, Workspace $workspace): bool
     {
-        // Owner can always view
         if ($user->id === $workspace->user_id) {
             return true;
         }
-
-        // Shared users can view if they have access
-        return $workspace->users()->where('user_id', $user->id)->exists();
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if (!$shared) {
+            return false;
+        }
+        $perm = $shared->pivot->permissions ?? null;
+        if (is_array($perm)) {
+            return !empty($perm['read_workspace']);
+        }
+        return true;
     }
 
     /**
@@ -34,17 +39,18 @@ class WorkspacePolicy
      */
     public function update(User $user, Workspace $workspace): bool
     {
-        // Only owner and editors can update
         if ($user->id === $workspace->user_id) {
             return true;
         }
-
-        $role = $workspace->users()
-            ->where('user_id', $user->id)
-            ->pluck('role')
-            ->first();
-
-        return $role === 'editor';
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if (!$shared) {
+            return false;
+        }
+        $perm = $shared->pivot->permissions ?? null;
+        if (is_array($perm)) {
+            return !empty($perm['update_workspace']);
+        }
+        return ($shared->pivot->role ?? null) === 'editor';
     }
 
     /**
@@ -52,7 +58,17 @@ class WorkspacePolicy
      */
     public function delete(User $user, Workspace $workspace): bool
     {
-        // Only owner can delete
-        return $user->id === $workspace->user_id;
+        if ($user->id === $workspace->user_id) {
+            return true;
+        }
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if (!$shared) {
+            return false;
+        }
+        $perm = $shared->pivot->permissions ?? null;
+        if (is_array($perm)) {
+            return !empty($perm['delete_workspace']);
+        }
+        return false;
     }
 }

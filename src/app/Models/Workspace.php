@@ -50,7 +50,7 @@ class Workspace extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'workspace_user')
-            ->withPivot('role')
+            ->withPivot('role', 'permissions', 'inherit_existing_documents', 'inherit_existing_events', 'apply_to_future_only')
             ->withTimestamps();
     }
 }

@@ -4,12 +4,15 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\ShareController;
+use App\Http\Controllers\NotificationController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    if (auth()->check()) {
+    if (Auth::check()) {
         return redirect()->route('workspaces.index');
     }
 
@@ -77,6 +80,24 @@ Route::middleware('auth')->group(function () {
         ->name('events.update');
     Route::delete('events/{event}', [EventController::class, 'destroy'])
         ->name('events.destroy');
+
+    // Sharing & Invitations
+    Route::post('workspaces/{workspace}/share', [ShareController::class, 'shareWorkspace'])
+        ->name('workspaces.share');
+    Route::post('resources/{type}/{id}/share', [ShareController::class, 'shareResource'])
+        ->name('resources.share');
+    Route::post('invitations/{invitation}/accept', [ShareController::class, 'acceptInvitation'])
+        ->name('invitations.accept');
+    Route::post('invitations/{invitation}/reject', [ShareController::class, 'rejectInvitation'])
+        ->name('invitations.reject');
+
+    // Notifications
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::get('notifications/count', [NotificationController::class, 'count'])
+        ->name('notifications.count');
+    Route::post('notifications/{id}/mark-read', [NotificationController::class, 'markRead'])
+        ->name('notifications.markRead');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

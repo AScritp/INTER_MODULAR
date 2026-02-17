@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Event;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\ResourceShare;
 
 class EventPolicy
 {
@@ -14,19 +15,34 @@ class EventPolicy
     public function view(User $user, Event $event): bool
     {
         $workspace = $event->workspace;
-
-        // Owner of workspace can view
         if ($user->id === $workspace->user_id) {
             return true;
         }
-
-        // Creator can view
         if ($user->id === $event->user_id) {
             return true;
         }
-
-        // Shared users with any role can view
-        return $workspace->users()->where('user_id', $user->id)->exists();
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if ($shared) {
+            $perm = $shared->pivot->permissions ?? null;
+            if (is_array($perm)) {
+                if (!empty($perm['read_existing_events'])) {
+                    return true;
+                }
+                if (!empty($perm['read_own_events']) && $event->user_id === $user->id) {
+                    return true;
+                }
+            }
+            return true;
+        }
+        $resourceShare = ResourceShare::where('resource_type', 'event')
+            ->where('resource_id', $event->id)
+            ->where('user_id', $user->id)
+            ->first();
+        if ($resourceShare) {
+            $rp = $resourceShare->permissions ?? [];
+            return !empty($rp['read']);
+        }
+        return false;
     }
 
     /**
@@ -34,17 +50,18 @@ class EventPolicy
      */
     public function create(User $user, Workspace $workspace): bool
     {
-        // Only owner and editors can create
         if ($user->id === $workspace->user_id) {
             return true;
         }
-
-        $role = $workspace->users()
-            ->where('user_id', $user->id)
-            ->pluck('role')
-            ->first();
-
-        return $role === 'editor';
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if (!$shared) {
+            return false;
+        }
+        $perm = $shared->pivot->permissions ?? null;
+        if (is_array($perm)) {
+            return !empty($perm['create_event']);
+        }
+        return ($shared->pivot->role ?? null) === 'editor';
     }
 
     /**
@@ -53,24 +70,36 @@ class EventPolicy
     public function update(User $user, Event $event): bool
     {
         $workspace = $event->workspace;
-
-        // Owner can update
         if ($user->id === $workspace->user_id) {
             return true;
         }
-
-        // Creator can update
         if ($user->id === $event->user_id) {
             return true;
         }
-
-        // Only editors can update
-        $role = $workspace->users()
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if ($shared) {
+            $perm = $shared->pivot->permissions ?? null;
+            if (is_array($perm)) {
+                if (!empty($perm['update_any_event'])) {
+                    return true;
+                }
+                if (!empty($perm['update_own_event']) && $user->id === $event->user_id) {
+                    return true;
+                }
+            }
+            if (($shared->pivot->role ?? null) === 'editor') {
+                return true;
+            }
+        }
+        $resourceShare = ResourceShare::where('resource_type', 'event')
+            ->where('resource_id', $event->id)
             ->where('user_id', $user->id)
-            ->pluck('role')
             ->first();
-
-        return $role === 'editor';
+        if ($resourceShare) {
+            $rp = $resourceShare->permissions ?? [];
+            return !empty($rp['update']);
+        }
+        return false;
     }
 
     /**
@@ -79,13 +108,35 @@ class EventPolicy
     public function delete(User $user, Event $event): bool
     {
         $workspace = $event->workspace;
-
-        // Only workspace owner can delete
         if ($user->id === $workspace->user_id) {
             return true;
         }
-
-        // Only creators can delete their own
-        return $user->id === $event->user_id;
+        if ($user->id === $event->user_id) {
+            return true;
+        }
+        $shared = $workspace->users()->where('user_id', $user->id)->first();
+        if ($shared) {
+            $perm = $shared->pivot->permissions ?? null;
+            if (is_array($perm)) {
+                if (!empty($perm['delete_any_event'])) {
+                    return true;
+                }
+                if (!empty($perm['delete_own_event']) && $user->id === $event->user_id) {
+                    return true;
+                }
+            }
+            if (($shared->pivot->role ?? null) === 'editor') {
+                return true;
+            }
+        }
+        $resourceShare = ResourceShare::where('resource_type', 'event')
+            ->where('resource_id', $event->id)
+            ->where('user_id', $user->id)
+            ->first();
+        if ($resourceShare) {
+            $rp = $resourceShare->permissions ?? [];
+            return !empty($rp['delete']);
+        }
+        return false;
     }
 }

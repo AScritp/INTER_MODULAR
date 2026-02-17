@@ -63,7 +63,7 @@ class User extends Authenticatable
     public function sharedWorkspaces()
     {
         return $this->belongsToMany(Workspace::class, 'workspace_user')
-            ->withPivot('role')
+            ->withPivot('role', 'permissions', 'inherit_existing_documents', 'inherit_existing_events', 'apply_to_future_only')
             ->withTimestamps();
     }
 

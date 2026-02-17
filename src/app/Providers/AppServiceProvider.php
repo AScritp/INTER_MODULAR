@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Workspace;
 use App\Models\Document;
@@ -40,9 +42,20 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
         
-        // Registrar policies
         foreach ($this->policies as $model => $policy) {
             Gate::policy($model, $policy);
         }
+
+        Inertia::share([
+            'notificationCount' => function () {
+                if (!Auth::check()) {
+                    return 0;
+                }
+                return Auth::user()
+                    ->notifications()
+                    ->whereNull('read_at')
+                    ->count();
+            },
+        ]);
     }
 }

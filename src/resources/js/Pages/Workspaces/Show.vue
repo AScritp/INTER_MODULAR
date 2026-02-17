@@ -68,6 +68,12 @@
                     >
                       Editar
                     </Link>
+                    <button
+                      @click="shareDocument(doc.id)"
+                      class="bg-purple-500 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm"
+                    >
+                      Compartir
+                    </button>
                   </div>
                 </div>
               </div>
@@ -114,6 +120,12 @@
                     >
                       Eliminar
                     </button>
+                    <button
+                      @click="shareEvent(event.id)"
+                      class="bg-purple-500 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm"
+                    >
+                      Compartir
+                    </button>
                   </div>
                 </div>
               </div>
@@ -137,13 +149,12 @@
                       required
                     />
                   </div>
-                  <div>
-                    <label class="block text-gray-700 font-semibold mb-2">Rol</label>
-                    <select v-model="shareForm.role" class="w-full px-4 py-2 border border-gray-300 rounded">
-                      <option value="editor">Editor</option>
-                      <option value="viewer">Lector</option>
-                    </select>
-                  </div>
+                  <PermissionMatrix
+                    v-model="shareForm.permissions"
+                    @update:inherit_existing_documents="val => shareForm.inherit_existing_documents = val"
+                    @update:inherit_existing_events="val => shareForm.inherit_existing_events = val"
+                    @update:apply_to_future_only="val => shareForm.apply_to_future_only = val"
+                  />
                   <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">
                     Invitar
                   </button>
@@ -181,8 +192,9 @@
 </template>
 
 <script setup>
-import { Link, useForm, Head } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { Link, useForm, Head, usePage } from "@inertiajs/vue3";
+import { ref, computed } from "vue";
+import PermissionMatrix from "@/Components/PermissionMatrix.vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
 const props = defineProps({
@@ -192,13 +204,21 @@ const props = defineProps({
 const activeTab = ref("documents");
 const shareForm = useForm({
   email: "",
-  role: "editor",
+  permissions: {},
+  inherit_existing_documents: false,
+  inherit_existing_events: false,
+  apply_to_future_only: false,
 });
 
-const isOwner = ref(false);
+const page = usePage();
+const isOwner = computed(() => {
+  const currentUserId = page?.props?.auth?.user?.id;
+  const ownerId = props.workspace?.user?.id ?? props.workspace?.user_id;
+  return currentUserId && ownerId && currentUserId === ownerId;
+});
 
 const addUser = () => {
-  shareForm.post(`/workspaces/${props.workspace.id}/users`, {
+  shareForm.post(`/workspaces/${props.workspace.id}/share`, {
     preserveScroll: true,
     onSuccess: () => {
       shareForm.reset();
@@ -224,4 +244,22 @@ const deleteEvent = (eventId) => {
     });
   }
 };
+
+const shareResource = (type, id) => {
+  const email = window.prompt("Email del usuario a compartir:");
+  if (!email) return;
+  const form = useForm({
+    email,
+    permissions: { read: true, update: true, delete: false },
+  });
+  form.post(`/resources/${type}/${id}/share`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      alert("Recurso compartido");
+    },
+  });
+};
+
+const shareDocument = (id) => shareResource('document', id);
+const shareEvent = (id) => shareResource('event', id);
 </script>
