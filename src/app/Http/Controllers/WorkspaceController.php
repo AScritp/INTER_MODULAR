@@ -43,7 +43,16 @@ class WorkspaceController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return response()->json($workspaces);
+            $sharedWorkspaces = Auth::user()
+                ->sharedWorkspaces()
+                ->with('user')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'owned' => $workspaces,
+                'shared' => $sharedWorkspaces,
+            ]);
         } catch (\Exception $e) {
             Log::error('Error loading workspaces: ' . $e->getMessage());
             return response()->json(['error' => 'Error al cargar workspaces'], 500);

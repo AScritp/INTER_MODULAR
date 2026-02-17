@@ -10,6 +10,7 @@ axios.defaults.withXSRFToken = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 const workspaces = ref([]);
+const sharedWorkspaces = ref([]);
 const documents = ref([]);
 const selectedWorkspace = ref(null);
 const loading = ref(false);
@@ -23,30 +24,33 @@ const loadWorkspaces = async () => {
     loading.value = true;
     try {
         const response = await axios.get('/dashboard/workspaces');
-        
-        // Verificar que la respuesta sea válida
-        if (!response.data || !Array.isArray(response.data)) {
-            console.error('Invalid response format:', response.data);
+
+        // Handle both old (array) and new ({owned, shared}) response formats
+        if (response.data && response.data.owned) {
+            workspaces.value = response.data.owned;
+            sharedWorkspaces.value = response.data.shared || [];
+        } else if (Array.isArray(response.data)) {
+            workspaces.value = response.data;
+            sharedWorkspaces.value = [];
+        } else {
             workspaces.value = [];
-            return;
+            sharedWorkspaces.value = [];
         }
-        
-        workspaces.value = response.data;
-        
+
         if (workspaces.value.length > 0 && !selectedWorkspace.value) {
             selectWorkspace(workspaces.value[0]);
+        } else if (workspaces.value.length === 0 && sharedWorkspaces.value.length > 0 && !selectedWorkspace.value) {
+            selectWorkspace(sharedWorkspaces.value[0]);
         }
     } catch (error) {
         console.error('Error loading workspaces:', error);
-        console.error('Error details:', error.response);
-        
         if (error.response?.status === 401) {
             alert('Sesión expirada. Por favor, recarga la página.');
         } else {
             alert('Error al cargar workspaces: ' + (error.response?.data?.message || error.message));
         }
-        
-        workspaces.value = []; // Asegurar que sea un array vacío en caso de error
+        workspaces.value = [];
+        sharedWorkspaces.value = [];
     } finally {
         loading.value = false;
     }
@@ -56,7 +60,7 @@ const loadWorkspaces = async () => {
 const selectWorkspace = async (workspace) => {
     selectedWorkspace.value = workspace;
     loading.value = true;
-    
+
     try {
         const response = await axios.get(`/dashboard/workspaces/${workspace.id}/documents`);
         documents.value = response.data;
@@ -74,12 +78,12 @@ const createWorkspace = async () => {
         alert('Ingresa un nombre para el workspace');
         return;
     }
-    
+
     try {
         const response = await axios.post('/dashboard/workspaces', {
             name: newWorkspaceName.value
         });
-        
+
         workspaces.value.unshift(response.data);
         newWorkspaceName.value = '';
         showWorkspaceForm.value = false;
@@ -96,18 +100,18 @@ const createDocument = async () => {
         alert('Ingresa un título para el documento');
         return;
     }
-    
+
     if (!selectedWorkspace.value) {
         alert('Selecciona un workspace primero');
         return;
     }
-    
+
     try {
         const response = await axios.post(
             `/dashboard/workspaces/${selectedWorkspace.value.id}/documents`,
             { title: newDocumentTitle.value, content: '' }
         );
-        
+
         documents.value.unshift(response.data);
         newDocumentTitle.value = '';
         showDocumentForm.value = false;
@@ -120,7 +124,7 @@ const createDocument = async () => {
 // Eliminar documento
 const deleteDocument = async (documentId) => {
     if (!confirm('¿Estás seguro de eliminar este documento?')) return;
-    
+
     try {
         await axios.delete(
             `/dashboard/workspaces/${selectedWorkspace.value.id}/documents/${documentId}`
@@ -135,11 +139,11 @@ const deleteDocument = async (documentId) => {
 // Eliminar workspace
 const deleteWorkspace = async (workspaceId) => {
     if (!confirm('¿Estás seguro de eliminar este workspace? Se eliminarán todos sus documentos.')) return;
-    
+
     try {
         await axios.delete(`/dashboard/workspaces/${workspaceId}`);
         workspaces.value = workspaces.value.filter(ws => ws.id !== workspaceId);
-        
+
         if (selectedWorkspace.value?.id === workspaceId) {
             selectedWorkspace.value = null;
             documents.value = [];
@@ -151,6 +155,11 @@ const deleteWorkspace = async (workspaceId) => {
         console.error('Error deleting workspace:', error);
         alert('Error al eliminar workspace: ' + (error.response?.data?.message || error.message));
     }
+};
+
+// Check if workspace is shared (not owned by current user)
+const isSharedWorkspace = (workspace) => {
+    return sharedWorkspaces.value.some(sw => sw.id === workspace.id);
 };
 
 onMounted(() => {
@@ -171,7 +180,7 @@ onMounted(() => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="grid grid-cols-12 gap-6">
-                    
+
                     <!-- Sidebar: Workspaces -->
                     <div class="col-span-12 md:col-span-3 bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
@@ -185,7 +194,7 @@ onMounted(() => {
                                     +
                                 </button>
                             </div>
-                            
+
                             <!-- Formulario crear workspace -->
                             <div v-if="showWorkspaceForm" class="mb-4 p-3 bg-gray-50 rounded-lg">
                                 <input
@@ -211,13 +220,13 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <!-- Lista de workspaces -->
-                            <div v-if="workspaces.length === 0 && !loading" class="text-center text-gray-500 py-8 text-sm">
+                            <!-- Lista de workspaces propios -->
+                            <div v-if="workspaces.length === 0 && sharedWorkspaces.length === 0 && !loading" class="text-center text-gray-500 py-8 text-sm">
                                 <p>No hay workspaces.</p>
                                 <p class="mt-2">¡Crea el primero!</p>
                             </div>
 
-                            <div v-else class="space-y-2">
+                            <div v-if="workspaces.length > 0" class="space-y-2 mb-4">
                                 <div
                                     v-for="workspace in workspaces"
                                     :key="workspace.id"
@@ -226,8 +235,8 @@ onMounted(() => {
                                     <div
                                         @click="selectWorkspace(workspace)"
                                         class="p-3 rounded-lg cursor-pointer transition"
-                                        :class="selectedWorkspace?.id === workspace.id 
-                                            ? 'bg-blue-50 border-blue-300 border-2' 
+                                        :class="selectedWorkspace?.id === workspace.id
+                                            ? 'bg-blue-50 border-blue-300 border-2'
                                             : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'"
                                     >
                                         <div class="flex justify-between items-start">
@@ -256,6 +265,42 @@ onMounted(() => {
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Workspaces compartidos -->
+                            <div v-if="sharedWorkspaces.length > 0">
+                                <h4 class="text-sm font-semibold text-blue-700 mb-2 mt-4 border-t pt-3">🔗 Compartidos</h4>
+                                <div class="space-y-2">
+                                    <div
+                                        v-for="workspace in sharedWorkspaces"
+                                        :key="`shared-${workspace.id}`"
+                                    >
+                                        <div
+                                            @click="selectWorkspace(workspace)"
+                                            class="p-3 rounded-lg cursor-pointer transition"
+                                            :class="selectedWorkspace?.id === workspace.id
+                                                ? 'bg-blue-100 border-blue-400 border-2'
+                                                : 'bg-blue-50 hover:bg-blue-100 border-2 border-blue-200'"
+                                        >
+                                            <div class="flex justify-between items-start">
+                                                <div class="flex-1">
+                                                    <p class="font-medium text-sm text-blue-900">{{ workspace.name }}</p>
+                                                    <p class="text-xs text-blue-500">
+                                                        de {{ workspace.user?.name || 'Usuario' }}
+                                                    </p>
+                                                </div>
+                                                <Link
+                                                    :href="`/workspaces/${workspace.id}`"
+                                                    @click.stop
+                                                    class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition"
+                                                    title="Ver workspace compartido"
+                                                >
+                                                    Ver →
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -270,6 +315,7 @@ onMounted(() => {
                                 <div class="flex justify-between items-center mb-6">
                                     <h3 class="text-lg font-semibold">
                                         📄 Documentos en "{{ selectedWorkspace.name }}"
+                                        <span v-if="isSharedWorkspace(selectedWorkspace)" class="text-sm text-blue-500 font-normal ml-2">(compartido)</span>
                                     </h3>
                                     <button
                                         @click="showDocumentForm = !showDocumentForm"

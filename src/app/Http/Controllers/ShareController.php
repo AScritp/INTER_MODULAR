@@ -118,7 +118,7 @@ class ShareController extends Controller
 
         $perm = is_string($invitation->permissions)
             ? json_decode($invitation->permissions, true)
-            : $invitation->permissions;
+            : (is_array($invitation->permissions) ? $invitation->permissions : []);
 
         if ($invitation->workspace_id && !$invitation->resource_type) {
             $invitation->workspace->users()->syncWithoutDetaching([
@@ -136,6 +136,16 @@ class ShareController extends Controller
                 'user_id' => Auth::id(),
                 'permissions' => $perm ?? [],
             ]);
+
+            // Also add workspace access so it appears in the user's shared workspaces
+            if ($invitation->workspace_id) {
+                $invitation->workspace->users()->syncWithoutDetaching([
+                    Auth::id() => [
+                        'role' => 'viewer',
+                        'permissions' => json_encode($perm ?? []),
+                    ],
+                ]);
+            }
         }
 
         $invitation->inviter->notify(new ShareAcceptedNotification($invitation));

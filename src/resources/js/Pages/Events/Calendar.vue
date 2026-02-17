@@ -21,7 +21,7 @@
             <div class="bg-gray-50 p-6 rounded">
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div
-                  v-for="event in workspace.events"
+                  v-for="event in events"
                   :key="event.id"
                   class="bg-white border-l-4 border-blue-500 p-4 rounded shadow-sm hover:shadow-md transition"
                 >
@@ -51,7 +51,7 @@
                 </div>
               </div>
 
-              <div v-if="workspace.events.length === 0" class="text-center py-12 text-gray-500">
+              <div v-if="events.length === 0" class="text-center py-12 text-gray-500">
                 No hay eventos programados
               </div>
             </div>
@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 
 const props = defineProps({
   workspace: Object,
@@ -82,7 +82,7 @@ const formatDate = (date) => {
 
 const deleteEvent = (eventId) => {
   if (confirm("¿Estás seguro de que deseas eliminar este evento?")) {
-    window.location.href = `/events/${eventId}`;
+    router.delete(`/events/${eventId}`);
   }
 };
 </script>
