@@ -276,8 +276,3 @@ jobs:
             
             echo "🎉 ¡Despliegue completado exitosamente!"
             echo "🌐 Aplicación disponible en: https://${{ secrets.SSH_HOST }}"
-            estado de contenedores..."
-            docker-compose -f docker-compose.yml ps
-            
-            echo "🎉 ¡Despliegue completado exitosamente!"
-            echo "🌐 Aplicación disponible en: https://${{ secrets.SSH_HOST }}"
