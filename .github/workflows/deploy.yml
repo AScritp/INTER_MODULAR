@@ -1,5 +1,7 @@
 name: Build, Test and Deploy
-
+run: |
+  npm ci
+  npm run build
 on:
   push:
     branches:
