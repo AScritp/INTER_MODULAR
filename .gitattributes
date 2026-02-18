@@ -1,0 +1,7 @@
+# Forzar LF en scripts de shell para evitar errores en Linux/bash
+*.sh text eol=lf
+
+# Otros archivos que deben usar LF
+*.conf text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf

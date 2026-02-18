@@ -13,8 +13,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Variables de configuración
-APP_PATH="${APP_PATH:=/home/deployer/apps/inter-modular}"
-REPO_URL="${REPO_URL:=https://github.com/tu-usuario/inter-modular.git}"
+APP_PATH="${APP_PATH:=/home/Administrador/apps/inter-modular}"
+REPO_URL="${REPO_URL:=https://github.com/AScritp/INTER_MODULAR.git}"
 BRANCH="${BRANCH:=main}"
 DB_PASSWORD="${DB_PASSWORD:=notion_pass}"
 REDIS_PASSWORD="${REDIS_PASSWORD:=redis_pass}"
@@ -111,12 +111,22 @@ log_success "Contenedores iniciados"
 log_info "Esperando a que los servicios estén disponibles..."
 sleep 15
 
-# 8. Ejecutar migraciones
+# 8. Instalar dependencias de Composer
+log_info "Instalando dependencias de Composer..."
+docker-compose -f docker-compose.yml exec -T php composer install --no-dev --optimize-autoloader --no-interaction
+log_success "Dependencias de Composer instaladas"
+
+# 9. Generar APP_KEY si no existe
+log_info "Verificando APP_KEY..."
+docker-compose -f docker-compose.yml exec -T php php artisan key:generate --force --no-interaction || true
+log_success "APP_KEY verificada"
+
+# 10. Ejecutar migraciones
 log_info "Ejecutando migraciones de base de datos..."
 docker-compose -f docker-compose.yml exec -T php php artisan migrate --force
 log_success "Migraciones ejecutadas"
 
-# 9. Ejecutar seeders (opcional)
+# 11. Ejecutar seeders (opcional)
 log_warning ""
 log_warning "¿Deseas ejecutar los seeders? (s/n)"
 read -n 1 run_seeders
@@ -127,21 +137,21 @@ if [ "$run_seeders" = "s" ] || [ "$run_seeders" = "S" ]; then
 fi
 echo ""
 
-# 10. Limpiar cache
+# 12. Limpiar cache
 log_info "Limpiando y regenerando cache..."
 docker-compose -f docker-compose.yml exec -T php php artisan cache:clear
 docker-compose -f docker-compose.yml exec -T php php artisan config:cache
 docker-compose -f docker-compose.yml exec -T php php artisan route:cache
 log_success "Cache regenerado"
 
-# 11. Establecer permisos correctos
+# 13. Establecer permisos correctos
 log_info "Estableciendo permisos de archivos..."
 docker-compose -f docker-compose.yml exec -T php chown -R www-data:www-data /var/www/html
 docker-compose -f docker-compose.yml exec -T php chmod -R 755 /var/www/html/storage
 docker-compose -f docker-compose.yml exec -T php chmod -R 755 /var/www/html/bootstrap/cache
 log_success "Permisos configurados"
 
-# 12. Compilar assets (si Node está disponible)
+# 14. Compilar assets (si Node está disponible)
 if docker-compose -f docker-compose.yml exec -T node npm --version &>/dev/null; then
     log_info "Compilando assets con Node..."
     docker-compose -f docker-compose.yml exec -T node npm install
@@ -149,8 +159,8 @@ if docker-compose -f docker-compose.yml exec -T node npm --version &>/dev/null; 
     log_success "Assets compilados"
 fi
 
-# 13. Mostrar estado
-log_info "Estado de concenters:"
+# 15. Mostrar estado
+log_info "Estado de contenedores:"
 docker-compose -f docker-compose.yml ps
 
 # Footer
