@@ -1,0 +1,69 @@
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Entorno local
+.env
+.env.local
+.env.*.local
+.env.production
+.env.backup
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Editor
+*~
+*.tmp
+*.bak
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# PHP
+vendor/
+composer.lock
+.phpunit.cache
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+
+# OS
+._*
+.AppleDouble
+.LSOverride
+
+# Directorios del proyecto que no deben commitearse
+/storage/logs/*
+!/storage/logs/.gitignore
+
+# SSH Keys (CRÍTICO - NUNCA commitear)
+*.pem
+*.key
+*.pub
+id_rsa
+id_rsa.pub
+known_hosts
+authorized_keys
+
+# Backups
+*.backup
+*.bak
+*.sql
+
+# IDE Temporales
+.tmp/
+.cache/

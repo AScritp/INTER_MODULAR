@@ -1,0 +1,257 @@
+name: Build, Test and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Build Docker Image
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/php
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:buildcache,mode=max
+
+  # Job 2: Run Tests
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: notion_test
+          MYSQL_USER: notion_user
+          MYSQL_PASSWORD: notion_pass
+          MYSQL_ROOT_PASSWORD: root_pass
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
+      redis:
+        image: redis:alpine
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php-action@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, redis, gd, zip
+          tools: composer
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install PHP dependencies
+        working-directory: ./src
+        run: composer install --prefer-dist --no-progress
+
+      - name: Copy environment file
+        working-directory: ./src
+        run: cp .env.example .env.testing
+
+      - name: Generate application key
+        working-directory: ./src
+        run: php artisan key:generate --env=testing
+
+      - name: Run migrations
+        working-directory: ./src
+        env:
+          DB_CONNECTION: mysql
+          DB_DATABASE: notion_test
+          DB_USERNAME: notion_user
+          DB_PASSWORD: notion_pass
+          DB_HOST: 127.0.0.1
+        run: php artisan migrate --env=testing
+
+      - name: Run tests
+        working-directory: ./src
+        env:
+          DB_CONNECTION: mysql
+          DB_DATABASE: notion_test
+          DB_USERNAME: notion_user
+          DB_PASSWORD: notion_pass
+          DB_HOST: 127.0.0.1
+        run: php artisan test
+
+  # Job 3: Deploy to Production
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop_on_error: true
+          script: |
+            set -e
+            
+            # Variables
+            APP_PATH="${{ secrets.DEPLOY_PATH }}"
+            IMAGE_REGISTRY="${{ env.REGISTRY }}"
+            IMAGE_NAME="${{ env.IMAGE_NAME }}"
+            IMAGE_TAG="${{ github.sha }}"
+            
+            echo "🚀 Iniciando despliegue de INTER_MODULAR..."
+            echo "📍 Ruta: $APP_PATH"
+            
+            # 1. Crear directorio si no existe
+            if [ ! -d "$APP_PATH" ]; then
+              echo "📁 Creando directorio de aplicación..."
+              mkdir -p "$APP_PATH"
+            fi
+            
+            cd "$APP_PATH"
+            
+            # 2. Clonar o actualizar repositorio
+            if [ -d ".git" ]; then
+              echo "🔄 Actualizando repositorio..."
+              git fetch origin
+              git reset --hard origin/main
+            else
+              echo "📥 Clonando repositorio..."
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            # 3. Login al Docker Registry
+            echo "🔐 Autenticándose en Docker Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login $IMAGE_REGISTRY -u ${{ github.actor }} --password-stdin
+            
+            # 4. Actualizar variables de entorno
+            echo "⚙️  Configurando variables de entorno..."
+            cat > .env.production << EOF
+            APP_NAME="INTER_MODULAR"
+            APP_ENV=${{ secrets.APP_ENV }}
+            APP_DEBUG=${{ secrets.APP_DEBUG }}
+            APP_KEY=${{ secrets.APP_KEY }}
+            APP_URL=https://${{ secrets.SSH_HOST }}
+            
+            DB_CONNECTION=mysql
+            DB_HOST=mysql
+            DB_PORT=3306
+            DB_DATABASE=notion_db
+            DB_USERNAME=notion_user
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            
+            CACHE_DRIVER=redis
+            QUEUE_CONNECTION=redis
+            SESSION_DRIVER=cookie
+            
+            REDIS_HOST=redis
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            REDIS_PORT=6379
+            
+            MAIL_MAILER=log
+            MAIL_HOST=smtp.mailtrap.io
+            MAIL_PORT=2525
+            MAIL_USERNAME=
+            MAIL_PASSWORD=
+            
+            SANCTUM_STATEFUL_DOMAINS=localhost:8080,127.0.0.1:8080
+            EOF
+            
+            # 5. Detener contenedores viejos
+            echo "🛑 Deteniendo contenedores anteriores..."
+            docker-compose -f docker-compose.yml down || true
+            
+            # 6. Actualizar imagen Docker
+            echo "📦 Descargando nueva imagen Docker..."
+            docker pull $IMAGE_REGISTRY/$IMAGE_NAME/app:$IMAGE_TAG || docker pull $IMAGE_REGISTRY/$IMAGE_NAME/app:latest
+            
+            # 7. Inicia contenedores
+            echo "🐳 Iniciando contenedores con Docker Compose..."
+            docker-compose -f docker-compose.yml up -d
+            
+            # 8. Esperar a que PHP esté listo
+            echo "⏳ Esperando a que PHP esté disponible..."
+            sleep 10
+            
+            # 9. Ejecutar migraciones
+            echo "🗄️  Ejecutando migraciones de base de datos..."
+            docker-compose -f docker-compose.yml exec -T php php artisan migrate --force
+            
+            # 10. Limpiar cache
+            echo "🧹 Limpiando cache de aplicación..."
+            docker-compose -f docker-compose.yml exec -T php php artisan cache:clear
+            docker-compose -f docker-compose.yml exec -T php php artisan config:cache
+            docker-compose -f docker-compose.yml exec -T php php artisan route:cache
+            
+            # 11. Compilar assets
+            echo "🎨 Compilando assets..."
+            docker-compose -f docker-compose.yml exec -T node npm install
+            docker-compose -f docker-compose.yml exec -T node npm run build
+            
+            # 12. Verificar estado
+            echo "✅ Verificando estado de contenedores..."
+            docker-compose -f docker-compose.yml ps
+            
+            echo "🎉 ¡Despliegue completado exitosamente!"
+            echo "🌐 Aplicación disponible en: https://${{ secrets.SSH_HOST }}"
