@@ -9,9 +9,7 @@ on:
     branches:
       - main
       - develop
-run:
-  npm ci
-  npm run build
+
 env:
   REGISTRY: ghcr.io
 
@@ -278,7 +276,7 @@ jobs:
             
             echo "🎉 ¡Despliegue completado exitosamente!"
             echo "🌐 Aplicación disponible en: https://${{ secrets.SSH_HOST }}"
-estado de contenedores..."
+            estado de contenedores..."
             docker-compose -f docker-compose.yml ps
             
             echo "🎉 ¡Despliegue completado exitosamente!"
