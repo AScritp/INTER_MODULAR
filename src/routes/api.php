@@ -13,7 +13,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Workspaces
-    Route::apiResource('workspaces', WorkspaceController::class);
+    Route::apiResource('workspaces', WorkspaceController::class)
+        ->names([
+            'index' => 'api.workspaces.index',
+            'store' => 'api.workspaces.store',
+            'show' => 'api.workspaces.show',
+            'update' => 'api.workspaces.update',
+            'destroy' => 'api.workspaces.destroy',
+        ]);
 
     // Documentos dentro de workspace
     Route::prefix('workspaces/{workspace}')->group(function () {
@@ -21,8 +28,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/documents/order', [DocumentController::class, 'updateOrder']);
         Route::get('/calendar/events', [EventController::class, 'getCalendarEvents']);
 
-        Route::apiResource('documents', DocumentController::class);
-        Route::apiResource('events', EventController::class);
+        Route::apiResource('documents', DocumentController::class)
+            ->names([
+                'index' => 'api.documents.index',
+                'store' => 'api.documents.store',
+                'show' => 'api.documents.show',
+                'update' => 'api.documents.update',
+                'destroy' => 'api.documents.destroy',
+            ]);
+        Route::apiResource('events', EventController::class)
+            ->names([
+                'index' => 'api.events.index',
+                'store' => 'api.events.store',
+                'show' => 'api.events.show',
+                'update' => 'api.events.update',
+                'destroy' => 'api.events.destroy',
+            ]);
     });
 
     // Document auto-save endpoint
