@@ -1,7 +1,5 @@
 name: Build, Test and Deploy
-run: |
-  npm ci
-  npm run build
+
 on:
   push:
     branches:
@@ -11,7 +9,9 @@ on:
     branches:
       - main
       - develop
-
+run:
+  npm ci
+  npm run build
 env:
   REGISTRY: ghcr.io
 
@@ -274,6 +274,11 @@ jobs:
             
             # 12. Verificar estado
             echo "✅ Verificando estado de contenedores..."
+            docker-compose -f docker-compose.yml ps
+            
+            echo "🎉 ¡Despliegue completado exitosamente!"
+            echo "🌐 Aplicación disponible en: https://${{ secrets.SSH_HOST }}"
+estado de contenedores..."
             docker-compose -f docker-compose.yml ps
             
             echo "🎉 ¡Despliegue completado exitosamente!"
