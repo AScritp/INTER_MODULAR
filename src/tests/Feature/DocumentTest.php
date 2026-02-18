@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Document;
 use App\Models\Workspace;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class DocumentTest extends TestCase
@@ -101,7 +102,9 @@ class DocumentTest extends TestCase
             'user_id' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)
+        Sanctum::actingAs($this->user);
+
+        $response = $this
             ->patchJson("/api/workspaces/{$this->workspace->id}/documents/order", [
                 'documents' => [$doc2->id, $this->document->id],
             ]);
