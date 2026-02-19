@@ -208,7 +208,7 @@ jobs:
             
             # 4. Actualizar variables de entorno
             echo "⚙️  Configurando variables de entorno..."
-            cat > src/.env << EOF
+            cat > .env.production << EOF
             APP_NAME="INTER_MODULAR"
             APP_ENV=${{ secrets.APP_ENV }}
             APP_DEBUG=${{ secrets.APP_DEBUG }}
@@ -249,7 +249,7 @@ jobs:
             
             # 7. Inicia contenedores
             echo "🐳 Iniciando contenedores con Docker Compose..."
-            docker-compose --profile build -f docker-compose.yml up -d
+            docker-compose -f docker-compose.yml up -d
             
             # 8. Esperar a que PHP esté listo
             echo "⏳ Esperando a que PHP esté disponible..."
@@ -267,7 +267,8 @@ jobs:
             
             # 11. Compilar assets
             echo "🎨 Compilando assets..."
-            docker-compose -f docker-compose.yml exec -T node sh -c "npm install && npm run build"
+            docker-compose -f docker-compose.yml exec -T node npm install
+            docker-compose -f docker-compose.yml exec -T node npm run build
             
             # 12. Verificar estado
             echo "✅ Verificando estado de contenedores..."
