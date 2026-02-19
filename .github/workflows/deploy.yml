@@ -208,7 +208,7 @@ jobs:
             
             # 4. Actualizar variables de entorno
             echo "⚙️  Configurando variables de entorno..."
-            cat > .env.production << EOF
+            cat > src/.env << EOF
             APP_NAME="INTER_MODULAR"
             APP_ENV=${{ secrets.APP_ENV }}
             APP_DEBUG=${{ secrets.APP_DEBUG }}
@@ -265,10 +265,9 @@ jobs:
             docker-compose -f docker-compose.yml exec -T php php artisan config:cache
             docker-compose -f docker-compose.yml exec -T php php artisan route:cache
             
-            # 11. Compilar assets
+            # 11. Compilar assets (usa el profile 'build')
             echo "🎨 Compilando assets..."
-            docker-compose -f docker-compose.yml exec -T node npm install
-            docker-compose -f docker-compose.yml exec -T node npm run build
+            docker-compose -f docker-compose.yml run --rm --profile build node
             
             # 12. Verificar estado
             echo "✅ Verificando estado de contenedores..."

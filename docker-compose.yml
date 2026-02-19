@@ -3,6 +3,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: notion_nginx
+    restart: unless-stopped
     ports:
       - "8080:80"
     volumes:
@@ -19,6 +20,7 @@ services:
       context: ./docker/php
       dockerfile: Dockerfile
     container_name: notion_php
+    restart: unless-stopped
     volumes:
       - ./src:/var/www/html
     environment:
@@ -38,6 +40,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: notion_mysql
+    restart: unless-stopped
     ports:
       - "3306:3306"
     environment:
@@ -55,21 +58,22 @@ services:
   redis:
     image: redis:alpine
     container_name: notion_redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
       - notion_network
 
-  # Node para compilar Vue.js
+  # Node para compilar Vue.js (build de producción, se ejecuta y termina)
   node:
     image: node:18-alpine
     container_name: notion_node
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html
-    command: sh -c "if [ -f package.json ]; then npm install && npm run dev; else echo 'Esperando package.json...'; sleep infinity; fi"
-    ports:
-      - "5174:5174"
+    command: sh -c "rm -f public/hot && npm install && npm run build"
+    profiles:
+      - build
     networks:
       - notion_network
 
