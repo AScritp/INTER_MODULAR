@@ -72,6 +72,8 @@ services:
     volumes:
       - ./src:/var/www/html
     command: sh -c "rm -f public/hot && npm install && npm run build"
+    profiles:
+      - build
     networks:
       - notion_network
 

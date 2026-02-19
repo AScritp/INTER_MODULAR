@@ -249,7 +249,7 @@ jobs:
             
             # 7. Inicia contenedores
             echo "🐳 Iniciando contenedores con Docker Compose..."
-            docker-compose -f docker-compose.yml up -d
+            docker-compose --profile build -f docker-compose.yml up -d
             
             # 8. Esperar a que PHP esté listo
             echo "⏳ Esperando a que PHP esté disponible..."
