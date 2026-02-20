@@ -25,7 +25,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head title="Bienvenido a NotionLike" />
+    <Head title="Bienvenido a NoteLike" />
     
     <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <!-- Navbar con scroll -->
@@ -46,7 +46,7 @@ onUnmounted(() => {
                             'text-2xl font-bold transition-colors',
                             scrolled ? 'text-gray-900' : 'text-gray-900'
                         ]">
-                            NotionLike
+                            NoteLike
                         </span>
                     </div>
 
@@ -125,9 +125,6 @@ onUnmounted(() => {
                             >
                                 Ir al Dashboard
                             </Link>
-                            <button class="px-8 py-4 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold text-lg hover:border-blue-500 hover:text-blue-600 transition-all">
-                                Ver Demo
-                            </button>
                         </div>
 
                         <div class="flex items-center space-x-8 pt-4">
@@ -255,7 +252,7 @@ onUnmounted(() => {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="grid md:grid-cols-4 gap-8">
                     <div>
-                        <h3 class="text-white font-bold text-lg mb-4">NotionLike</h3>
+                        <h3 class="text-white font-bold text-lg mb-4">NoteLike</h3>
                         <p class="text-sm">
                             Tu espacio de trabajo todo-en-uno para ser más productivo.
                         </p>
@@ -286,7 +283,7 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="border-t border-gray-800 mt-12 pt-8 text-center text-sm">
-                    <p>&copy; 2024 NotionLike. Todos los derechos reservados.</p>
+                    <p>&copy; 2024 NoteLike. Todos los derechos reservados.</p>
                 </div>
             </div>
         </footer>

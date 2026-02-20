@@ -37,7 +37,12 @@ const showingNavigationDropdown = ref(false);
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
-                                    Dashboard
+                                    home
+                                </NavLink>
+                                <NavLink
+                                    :href='`/workspaces/`'
+                                >
+                                    workspaces
                                 </NavLink>
                             </div>
                         </div>
