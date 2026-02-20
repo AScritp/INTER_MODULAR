@@ -236,7 +236,7 @@ jobs:
             MAIL_USERNAME=
             MAIL_PASSWORD=
             
-            SANCTUM_STATEFUL_DOMAINS=localhost:8080,127.0.0.1:8080
+            SANCTUM_STATEFUL_DOMAINS=localhost:80,127.0.0.1:80
             EOF
             
             # 5. Detener contenedores viejos
